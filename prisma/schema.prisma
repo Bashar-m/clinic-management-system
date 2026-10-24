@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+model User{ 
+  id      String     @id @default(uuid())
+  name   String
+  phone  String
+  email  String     @unique
+  passwordHash String
+  image  String?
+
+  doctor Doctor?
+  appointment Appointment[]
+  role   Role   @default(PATIENT)
+ 
+}
+
+model Doctor{
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+  bio    String?
+  appointment Appointment[]
+  specialtyId String
+  specialty Specialty @relation(fields: [specialtyId], references: [id])
+  availabilitySlots AvailabilitySlot[]
+
+}
+
+model Appointment{
+  id        String   @id @default(uuid())
+  patientId String
+  patient   User        @relation(fields:[patientId], references: [id])
+  doctorId  String
+  doctor    Doctor     @relation(fields: [doctorId], references: [id])
+  startTime DateTime
+  endTime   DateTime
+  status    AppointmentStatus @default(SCHEDULED)
+  createdAt DateTime @default(now())
+
+  @@unique([doctorId, startTime])
+  @@index([patientId])
+
+}
+
+model Specialty{
+  id   String @id @default(uuid())
+  name String
+  doctors Doctor[]
+}
+
+model AvailabilitySlot {
+  id        String @id @default(uuid())
+  doctorId  String
+  doctor    Doctor @relation(fields: [doctorId], references: [id])
+  dayOfWeek Int    // 0 = الأحد … 6 = السبت
+  startTime String // "09:00"
+  endTime   String // "14:00"
+   @@unique([doctorId, dayOfWeek, startTime])
+}
